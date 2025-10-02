@@ -15,12 +15,12 @@ jobs:
         run: |
           set -euo pipefail
           KERNEL_URL="https://kernel.ubuntu.com/~kernel-ppa/mainline/v${VERSION}/"
-          PAGE=$(wget --quiet -O - "$KERNEL_URL" | grep -A8 -E "Build for amd64|Test amd64")
+          PAGE=$(wget --quiet -O - "$KERNEL_URL" | grep -A8 -E "Build for arm64|Test arm64")
           ALL_DEB=$(echo "$PAGE" | grep -m1 'all.deb' | cut -d '"' -f 2)
-          AMD64_DEB=$(echo "$PAGE" | grep -m1 'amd64.deb' | cut -d '"' -f 2)
+          ARM64_DEB=$(echo "$PAGE" | grep -m1 'arm64.deb' | cut -d '"' -f 2)
           [ -n "$ALL_DEB" ] || { echo "all.deb not found"; exit 1; }
-          [ -n "$AMD64_DEB" ] || { echo "amd64.deb not found"; exit 2; }
-          wget -nv "${KERNEL_URL}${AMD64_DEB}"
+          [ -n "$ARM64_DEB" ] || { echo "arm64.deb not found"; exit 2; }
+          wget -nv "${KERNEL_URL}${ARM64_DEB}"
           wget -nv "${KERNEL_URL}${ALL_DEB}"
           sudo dpkg --force-all -i *.deb
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
