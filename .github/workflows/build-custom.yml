@@ -34,24 +34,21 @@ jobs:
       - name: Build
         run: make KVER="$KVER" CONFIG_PLATFORM_I386_PC=y CC=cc
 
-      - name: Package artifacts
+      - name: Package artifacts (ZIP only)
         run: |
           set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zip
           mkdir -p dist
           cp 8189es.ko dist/
-          # simpan metadata berguna
           printf "%s\n" "${{ steps.kernel.outputs.kver }}" > dist/KERNEL.txt
           modinfo 8189es.ko > dist/modinfo.txt || true
-          tar -czf "rtl8189es-${{ steps.kernel.outputs.kver }}.tar.gz" -C dist .
+          (cd dist && zip -r "rtl8189es-${{ steps.kernel.outputs.kver }}.zip" .)
 
-      - name: Upload artifact
+      - name: Upload artifact (dist ZIP)
         uses: actions/upload-artifact@v4
         with:
           name: rtl8189es-${{ steps.kernel.outputs.kver }}
-          path: |
-            8189es.ko
-            rtl8189es-${{ steps.kernel.outputs.kver }}.tar.gz
-            dist/**
-          compression-level: 9
+          path: dist/*.zip
           if-no-files-found: error
           retention-days: 14
