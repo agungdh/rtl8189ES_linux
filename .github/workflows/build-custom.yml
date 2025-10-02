@@ -11,6 +11,7 @@ jobs:
       VERSION: "6.1.154"
     steps:
       - name: Install Linux mainline ${{ env.VERSION }}
+        id: kernel
         run: |
           set -euo pipefail
           KERNEL_URL="https://kernel.ubuntu.com/~kernel-ppa/mainline/v${VERSION}/"
@@ -24,9 +25,33 @@ jobs:
           sudo dpkg --force-all -i *.deb
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 14
-          echo "KVER=$(echo "$ALL_DEB" | cut -d '_' -f 2 | rev | cut -c14- | rev)-generic" >> $GITHUB_ENV
+          KVER="$(echo "$ALL_DEB" | cut -d '_' -f 2 | rev | cut -c14- | rev)-generic"
+          echo "KVER=$KVER" >> "$GITHUB_ENV"
+          echo "kver=$KVER" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
 
       - name: Build
         run: make KVER="$KVER" CONFIG_PLATFORM_I386_PC=y CC=cc
+
+      - name: Package artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp 8189es.ko dist/
+          # simpan metadata berguna
+          printf "%s\n" "${{ steps.kernel.outputs.kver }}" > dist/KERNEL.txt
+          modinfo 8189es.ko > dist/modinfo.txt || true
+          tar -czf "rtl8189es-${{ steps.kernel.outputs.kver }}.tar.gz" -C dist .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtl8189es-${{ steps.kernel.outputs.kver }}
+          path: |
+            8189es.ko
+            rtl8189es-${{ steps.kernel.outputs.kver }}.tar.gz
+            dist/**
+          compression-level: 9
+          if-no-files-found: error
+          retention-days: 14
